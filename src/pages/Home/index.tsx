@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod"; // lib não permite export default
 
 import { HomeContainer, FormContainer, CountdownContainer, Separator, StartCountdownButton, TaskInput, MinutesAmountInput } from "./styles";
+import { useState } from "react";
 
 // configurações de validação do formulário
 const newCycleFormValidationSchema = zod.object({
@@ -16,7 +17,16 @@ const newCycleFormValidationSchema = zod.object({
 // integração com TS utilizando zod
 type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
 
+interface Cycle {
+  id: string
+  task: string
+  minutesAmount: number
+};
+
 export function Home() {
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
+
   const { register, handleSubmit, watch, reset } = useForm<NewCycleFormData>({
     resolver: zodResolver(newCycleFormValidationSchema),
     defaultValues: {
@@ -26,9 +36,24 @@ export function Home() {
   })
 
   function handleCreateNewCycle(data: NewCycleFormData) { // data: dados dos inputs
-    console.log(data)
+    const id = String(new Date().getTime()) // para não ter ids repetidos
+
+    const newCycle: Cycle = {
+      id,
+      task: data.task,
+      minutesAmount: data.minutesAmount
+    };
+
+    setCycles((state) => [...state, newCycle]);
+    setActiveCycleId(id);
+
     reset();
   };
+
+  // capturando o ciclo ativo
+  const activeCycle = cycles.find(cycle => cycle.id === activeCycleId);
+
+  console.log(activeCycle)
 
   const task = watch('task'); // observar o campo
   const isSubmitDisabled = !task;
