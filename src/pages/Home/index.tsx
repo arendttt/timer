@@ -24,6 +24,7 @@ interface Cycle {
   minutesAmount: number
   startDate: Date
   interruptedDate?: Date
+  finishedDate?: Date
 };
 
 export function Home() {
@@ -41,20 +42,39 @@ export function Home() {
 
     // capturando o ciclo ativo
     const activeCycle = cycles.find(cycle => cycle.id === activeCycleId);
+   
+    const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
 
   useEffect(() => {
     let interval: number; 
 
     if(activeCycle) {
       interval = setInterval(() => {
-        setAmountSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate)) // comparando a data atual com a data em que o ciclo começou
+        const secondsDifference = differenceInSeconds(new Date(), activeCycle.startDate); // comparando a data atual com a data em que o ciclo começou
+
+        if (secondsDifference >= totalSeconds) {
+          setCycles( state =>
+            state.map((cycle) => {
+              if (cycle.id === activeCycleId) {
+                return {...cycle, finishedDate: new Date()}
+              } else {
+                return cycle
+              }
+          }))
+
+          setAmountSecondsPassed(totalSeconds)
+
+          clearInterval(interval)
+        } else {
+          setAmountSecondsPassed(secondsDifference) 
+        }
       }, 1000)
     }
 
     return () => {
       clearInterval(interval)
     }
-  }, [activeCycle])
+  }, [activeCycle, totalSeconds, activeCycleId])
 
   function handleCreateNewCycle(data: NewCycleFormData) { // data: dados dos inputs
     const id = String(new Date().getTime()) // para não ter ids repetidos
@@ -74,8 +94,8 @@ export function Home() {
   };
 
   function handleInterruptCycle () {
-    setCycles(
-      cycles.map((cycle) => {
+    setCycles( state =>
+      state.map((cycle) => {
         if (cycle.id === activeCycleId) {
           return {...cycle, interruptedDate: new Date()}
         } else {
@@ -87,7 +107,6 @@ export function Home() {
   };
 
   // transformando os minutos do countdown em segundos
-  const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
   const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
 
   const minutesAmount = Math.floor(currentSeconds / 60); //arredonda os minutos pra baixo,
